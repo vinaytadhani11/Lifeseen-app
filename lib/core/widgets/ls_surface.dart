@@ -796,15 +796,28 @@ class _LsSmallCtaState extends State<LsSmallCta> {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (widget.icon != null) ...[
-              LsIcon(widget.icon!, size: 18, color: fg, stroke: 2.2),
-              const SizedBox(width: 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (widget.icon != null) ...[
+                LsIcon(widget.icon!, size: 18, color: fg, stroke: 2.2),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.label.toUpperCase(),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: AppText.jakarta(14.5, FontWeight.w800, color: fg, spacing: .6),
+                  ),
+                ),
+              ),
             ],
-            Text(widget.label.toUpperCase(), style: AppText.jakarta(14.5, FontWeight.w800, color: fg, spacing: .6)),
-          ],
+          ),
         ),
       ),
     );

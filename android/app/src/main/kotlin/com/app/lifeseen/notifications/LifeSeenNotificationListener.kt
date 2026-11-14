@@ -1,4 +1,4 @@
-package com.lifeseen.notifications
+package com.app.lifeseen.notifications
 
 import android.app.Notification
 import android.app.Person

@@ -1,0 +1,25 @@
+The upload keystore for Smoky (com.smoky.com) is ready. Both the keystore and the password file are ignored by git.
+
+File
+android/app/upload-keystore.jks
+
+Passwords
+android/key.properties
+
+Alias : upload
+
+Store and key password
+E6oqAyoaLp0cMakbLwbqWCa8sCnajEqL
+
+Algorithm
+RSA 2048
+
+Valid
+28 Sep 2026 – 13 Feb 2054
+
+SHA-1
+EF:26:85:BC:FC:6C:BE:65:6A:FB:04:BF:51:9B:1C:06:27:30:32:9A
+SHA-256
+0E:C8:22:EB:B0:B9:23:C0:8C:22:C6:6F:6D:57:7C:19:EE:38:08:A1:AC:E1:29:59:2A:2B:1A:FE:EE:99:B5:7C
+
+The certificate name is CN=Smoky, OU=Android, O=Smoky, L=India, ST=India, C=IN.

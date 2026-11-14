@@ -133,17 +133,7 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
               LsCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.btnGradient,
-                        borderRadius: BorderRadius.circular(13),
-                        boxShadow: const [BoxShadow(color: AppColors.edge, offset: Offset(0, 3))],
-                      ),
-                      child: const LsIcon(LsIconType.bell, size: 22, color: AppColors.ink, stroke: 2.2),
-                    ),
+                    const LsArt(LsArts.iconBell, height: 44, width: 44, fit: BoxFit.contain),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
@@ -168,7 +158,7 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
               _label('Saving'),
               _group([
                 _row(
-                  icon: LsIconType.grid,
+                  art: LsArts.iconApps,
                   title: 'Apps to save',
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text('$_apps apps', style: AppText.mono(13, FontWeight.w700, color: AppColors.text)),
@@ -182,8 +172,7 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
                       .then((_) => _load()),
                 ),
                 _row(
-                  icon: LsIconType.pause,
-                  color: AppColors.amber,
+                  art: LsArts.iconPause,
                   title: 'Pause saving',
                   subtitle: 'Stop saving until you turn it back on',
                   onTap: () => _update(_s.copyWith(paused: !_s.paused)),
@@ -222,7 +211,8 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
                   Row(children: [
                     Expanded(
                       child: Text(
-                        '${nhNumber(_storage.count)} notifications · ${nhNumber(_storage.images)} images',
+                        '${nhNumber(_storage.count)} notifications',
+                        // '${nhNumber(_storage.count)} notifications · ${nhNumber(_storage.images)} images',
                         style: AppText.jakarta(15, FontWeight.w700),
                       ),
                     ),
@@ -239,7 +229,7 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
               ),
               const SizedBox(height: 12),
               _group(danger: true, [
-                _row(icon: LsIconType.trash, color: AppColors.red, title: 'Clear history', titleColor: AppColors.red, onTap: _clear, chevron: true),
+                _row(art: LsArts.iconTrash, title: 'Clear history', titleColor: AppColors.red, onTap: _clear, chevron: true),
               ]),
             ]),
           ),
@@ -269,9 +259,8 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
       );
 
   Widget _row({
-    required LsIconType icon,
+    required String art,
     required String title,
-    Color color = AppColors.green,
     String? subtitle,
     Widget? trailing,
     Color titleColor = AppColors.text,
@@ -285,7 +274,7 @@ class _HistorySettingsScreenState extends State<HistorySettingsScreen> with Widg
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             child: Row(children: [
-              LsIconChip(icon, color: color, size: 36, iconSize: 17),
+              LsArt(art, height: 40, width: 40, fit: BoxFit.contain),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
@@ -317,32 +306,11 @@ class _RetentionToggle extends StatelessWidget {
         LsSegmentedToggle(labels: _labels, index: index, onChanged: onChanged),
         if (!premium)
           const Positioned(
-            top: -8,
-            right: 10,
-            child: _CrownBadge(),
+            top: -10,
+            right: 6,
+            child: LsArt(LsArts.iconForever, height: 26, width: 26, fit: BoxFit.contain),
           ),
       ],
-    );
-  }
-}
-
-class _CrownBadge extends StatelessWidget {
-  const _CrownBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 22,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.amberFill,
-        borderRadius: BorderRadius.circular(7),
-        boxShadow: [
-          BoxShadow(color: AppColors.amberFill.withValues(alpha: .4), blurRadius: 8, offset: const Offset(0, 3)),
-        ],
-      ),
-      child: const LsArt(LsArts.crownTile, height: 16, width: 16, fit: BoxFit.contain),
     );
   }
 }

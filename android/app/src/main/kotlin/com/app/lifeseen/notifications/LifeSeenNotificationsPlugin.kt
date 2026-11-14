@@ -1,4 +1,4 @@
-package com.lifeseen.notifications
+package com.app.lifeseen.notifications
 
 import android.app.Activity
 import android.app.AppOpsManager
@@ -32,7 +32,7 @@ import java.util.concurrent.Executors
  * Register it once in MainActivity:
  *   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
  *       super.configureFlutterEngine(flutterEngine)
- *       flutterEngine.plugins.add(com.lifeseen.notifications.LifeSeenNotificationsPlugin())
+ *       flutterEngine.plugins.add(com.app.lifeseen.notifications.LifeSeenNotificationsPlugin())
  *   }
  */
 class LifeSeenNotificationsPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, EventChannel.StreamHandler, ActivityAware {

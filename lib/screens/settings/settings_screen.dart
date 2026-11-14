@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -474,10 +475,12 @@ class _PremiumTestPanelState extends State<_PremiumTestPanel> {
                     _line('Expires: ${premium.expires}'),
                     _line('Days remaining: ${premium.days}'),
                     const SizedBox(height: 12),
+                    if(kDebugMode)...[
                     _TestButton(
-                      label: 'Reset subscription (test)',
-                      onTap: _resetSubscription,
-                    ),
+                        label: 'Reset subscription (test)',
+                        onTap: _resetSubscription,
+                      ),
+                    ],
                   ],
                 ],
               ),

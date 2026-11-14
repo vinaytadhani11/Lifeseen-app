@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDqUynIxdZsOzKkJyu2AuVYxfVqZxAg6Yw',
-    appId: '1:164843390802:android:c7938ece26e6b88f0a1c8b',
+    appId: '1:164843390802:android:5dd25bf91949b76a0a1c8b',
     messagingSenderId: '164843390802',
     projectId: 'whatsapp-mode',
     databaseURL: 'https://whatsapp-mode-default-rtdb.firebaseio.com',

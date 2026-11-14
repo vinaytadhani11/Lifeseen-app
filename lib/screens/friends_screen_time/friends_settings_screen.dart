@@ -171,9 +171,7 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
               child: Column(
                 children: [
                   _InfoRow(
-                    icon: LsIconType.user,
-                    tint: AppColors.green,
-                    wash: AppColors.mint,
+                    art: LsArts.iconProfile,
                     title: 'Name',
                     trailing: GestureDetector(
                       onTap: () {
@@ -198,9 +196,7 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
                   ),
                   const _Hairline(),
                   _InfoRow(
-                    icon: LsIconType.phone,
-                    tint: AppColors.green,
-                    wash: AppColors.mint,
+                    art: LsArts.iconPhone,
                     title: 'Phone number',
                     value: Text(profile.phone, style: AppText.jakarta(13, FontWeight.w500, color: AppColors.grey)),
                   ),
@@ -213,27 +209,21 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
               child: Column(
                 children: [
                   _NavRow(
-                    icon: LsIconType.users,
-                    tint: AppColors.indigo,
-                    wash: AppColors.indigo.withValues(alpha: .12),
+                    art: LsArts.iconFriends,
                     title: 'My Friends',
                     count: profile.friends.length,
                     onTap: () => Get.to<void>(() => const FriendshipStatusScreen(mode: FriendshipMode.friends)),
                   ),
                   const _Hairline(),
                   _NavRow(
-                    icon: LsIconType.send,
-                    tint: AppColors.blue,
-                    wash: AppColors.blue.withValues(alpha: .12),
+                    art: LsArts.iconSent,
                     title: 'Sent Requests',
                     count: profile.sentRequests.length,
                     onTap: () => Get.to<void>(() => const FriendshipStatusScreen(mode: FriendshipMode.sentRequests)),
                   ),
                   const _Hairline(),
                   _NavRow(
-                    icon: LsIconType.userPlus,
-                    tint: AppColors.teal,
-                    wash: AppColors.mint,
+                    art: LsArts.iconReceived,
                     title: 'Received Requests',
                     count: profile.receivedRequests.length,
                     onTap: () => Get.to<void>(() => const FriendshipStatusScreen(mode: FriendshipMode.requestsReceived)),
@@ -264,9 +254,7 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
             const _SectionLabel('Tools'),
             _Card(
               child: _NavRow(
-                icon: LsIconType.bell,
-                tint: AppColors.green,
-                wash: AppColors.mint,
+                art: LsArts.iconBell,
                 title: 'Notification History',
                 subtitle: widget.historySummary,
                 onTap: widget.onNotificationHistory!,
@@ -279,25 +267,19 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
             child: Column(
               children: [
                 _NavRow(
-                  icon: LsIconType.doc,
-                  tint: AppColors.green,
-                  wash: AppColors.mint,
+                  art: LsArts.iconDocument,
                   title: 'Privacy and Policy',
                   onTap: () => launchUrl(Uri.parse('https://sites.google.com/view/seenx/privacy'), mode: LaunchMode.externalApplication),
                 ),
                 const _Hairline(),
                 _NavRow(
-                  icon: LsIconType.doc,
-                  tint: AppColors.green,
-                  wash: AppColors.mint,
+                  art: LsArts.iconDocument,
                   title: 'Terms of Use',
                   onTap: () => launchUrl(Uri.parse('https://sites.google.com/view/seenx/terms'), mode: LaunchMode.externalApplication),
                 ),
                 const _Hairline(),
                 _NavRow(
-                  icon: LsIconType.doc,
-                  tint: AppColors.green,
-                  wash: AppColors.mint,
+                  art: LsArts.iconDocument,
                   title: 'EULA',
                   onTap: () => launchUrl(Uri.parse('https://sites.google.com/view/seenx/eula'), mode: LaunchMode.externalApplication),
                 ),
@@ -309,17 +291,13 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
             child: Column(
               children: [
                 _NavRow(
-                  icon: LsIconType.star,
-                  tint: AppColors.amber,
-                  wash: AppColors.chipAmberBg,
+                  art: LsArts.iconStar,
                   title: 'Rate Us',
                   onTap: () => SettingsActionsService.handle(SettingsAction.rateUs, shareOrigin: null),
                 ),
                 const _Hairline(),
-                _NavRow(
-                  icon: LsIconType.share,
-                  tint: AppColors.indigo,
-                  wash: AppColors.indigo.withValues(alpha: .12),
+                const _NavRow(
+                  art: LsArts.iconShare,
                   title: 'Share The App',
                   onTap: shareSeenX,
                 ),
@@ -333,18 +311,14 @@ class _FriendsSettingsScreenState extends State<FriendsSettingsScreen> {
               child: Column(
                 children: [
                   _NavRow(
-                    icon: LsIconType.trash,
-                    tint: AppColors.red,
-                    wash: AppColors.red.withValues(alpha: .1),
+                    art: LsArts.iconTrash,
                     title: 'Delete Account',
                     danger: true,
                     onTap: _delete,
                   ),
                   Divider(height: 1, color: AppColors.red.withValues(alpha: .15)),
                   _NavRow(
-                    icon: LsIconType.logout,
-                    tint: AppColors.red,
-                    wash: AppColors.red.withValues(alpha: .1),
+                    art: LsArts.iconLogout,
                     title: 'Log Out',
                     danger: true,
                     onTap: _logout,
@@ -413,22 +387,13 @@ class _Hairline extends StatelessWidget {
   }
 }
 
-class _IconWash extends StatelessWidget {
-  const _IconWash({required this.icon, required this.tint, required this.wash});
-
-  final LsIconType icon;
-  final Color tint;
-  final Color wash;
+class _IconArt extends StatelessWidget {
+  const _IconArt(this.art);
+  final String art;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: wash, borderRadius: BorderRadius.circular(12)),
-      child: LsIcon(icon, size: 18, color: tint, stroke: 1.8),
-    );
+    return LsArt(art, height: 40, width: 40, fit: BoxFit.contain);
   }
 }
 
@@ -597,17 +562,13 @@ class _ProfileCard extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
-    required this.icon,
-    required this.tint,
-    required this.wash,
+    required this.art,
     required this.title,
     required this.value,
     this.trailing,
   });
 
-  final LsIconType icon;
-  final Color tint;
-  final Color wash;
+  final String art;
   final String title;
   final Widget value;
   final Widget? trailing;
@@ -618,7 +579,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          _IconWash(icon: icon, tint: tint, wash: wash),
+          _IconArt(art),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -639,9 +600,7 @@ class _InfoRow extends StatelessWidget {
 
 class _NavRow extends StatelessWidget {
   const _NavRow({
-    required this.icon,
-    required this.tint,
-    required this.wash,
+    required this.art,
     required this.title,
     required this.onTap,
     this.subtitle,
@@ -649,9 +608,7 @@ class _NavRow extends StatelessWidget {
     this.danger = false,
   });
 
-  final LsIconType icon;
-  final Color tint;
-  final Color wash;
+  final String art;
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
@@ -668,7 +625,7 @@ class _NavRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            _IconWash(icon: icon, tint: tint, wash: wash),
+            _IconArt(art),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

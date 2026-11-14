@@ -7,24 +7,35 @@ import 'package:tableflow_plus/models/screen_time_user.dart';
 class UsageStatsService {
   UsageStatsService._();
 
-  static const _channel = MethodChannel('com.app.logsense/usage_stats');
+  static const _channel = MethodChannel('com.app.lifeseen/usage_stats');
 
   static bool get isAndroid => !kIsWeb && Platform.isAndroid;
 
+  static Future<T?> _invoke<T>(String method, [dynamic arguments]) async {
+    if (!isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<T>(method, arguments);
+    } on MissingPluginException catch (e) {
+      debugPrint('[UsageStats] MissingPluginException for $method: $e');
+      return null;
+    } on PlatformException catch (e) {
+      debugPrint('[UsageStats] PlatformException for $method: $e');
+      return null;
+    }
+  }
+
   static Future<bool> hasPermission() async {
     if (!isAndroid) return true;
-    final allowed = await _channel.invokeMethod<bool>('hasPermission');
+    final allowed = await _invoke<bool>('hasPermission');
     return allowed ?? false;
   }
 
   static Future<void> openSettings() async {
-    if (!isAndroid) return;
-    await _channel.invokeMethod<void>('openSettings');
+    await _invoke<void>('openSettings');
   }
 
   static Future<List<ScreenTimeApp>> queryToday() async {
-    if (!isAndroid) return const [];
-    final raw = await _channel.invokeMethod<List<dynamic>>('queryToday');
+    final raw = await _invoke<List<dynamic>>('queryToday');
     if (raw == null) return const [];
     return [
       for (final item in raw)
@@ -50,7 +61,7 @@ class UsageStatsService {
     final key = packageName.isNotEmpty ? packageName : name.toLowerCase();
     if (key.isEmpty) return null;
     if (_iconCache.containsKey(key)) return _iconCache[key];
-    final raw = await _channel.invokeMethod<dynamic>('appIcon', {
+    final raw = await _invoke<dynamic>('appIcon', {
       'package': packageName,
       'name': name,
     });
@@ -64,8 +75,7 @@ class UsageStatsService {
   }
 
   static Future<List<double>> queryHourlyToday() async {
-    if (!isAndroid) return List<double>.filled(24, 0);
-    final raw = await _channel.invokeMethod<List<dynamic>>('queryHourlyToday');
+    final raw = await _invoke<List<dynamic>>('queryHourlyToday');
     if (raw == null || raw.length != 24) return List<double>.filled(24, 0);
     return [for (final item in raw) (item as num?)?.toDouble() ?? 0];
   }

@@ -1,4 +1,4 @@
-package com.app.logsense
+package com.app.lifeseen
 
 import android.app.AppOpsManager
 import android.app.usage.UsageEvents

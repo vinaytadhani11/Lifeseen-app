@@ -352,6 +352,20 @@ abstract final class LsArts {
   static const home = 'assets/icons/3d/home.png';
   static const completeProfile = 'assets/icons/complete_profile.png';
   static const settingsGear = 'assets/icons/settings_gear.png';
+  static const iconProfile = 'assets/icons/3d/icon_profile.png';
+  static const iconPhone = 'assets/icons/3d/icon_phone.png';
+  static const iconFriends = 'assets/icons/3d/icon_friends.png';
+  static const iconSent = 'assets/icons/3d/icon_sent.png';
+  static const iconReceived = 'assets/icons/3d/icon_received.png';
+  static const iconBell = 'assets/icons/3d/icon_bell.png';
+  static const iconDocument = 'assets/icons/3d/icon_document.png';
+  static const iconStar = 'assets/icons/3d/icon_star.png';
+  static const iconTrash = 'assets/icons/3d/icon_trash.png';
+  static const iconLogout = 'assets/icons/3d/icon_logout.png';
+  static const iconApps = 'assets/icons/3d/icon_apps.png';
+  static const iconPause = 'assets/icons/3d/icon_pause.png';
+  static const iconShare = 'assets/icons/3d/icon_share.png';
+  static const iconForever = 'assets/icons/3d/icon_forever.png';
 }
 
 class LsArt extends StatelessWidget {

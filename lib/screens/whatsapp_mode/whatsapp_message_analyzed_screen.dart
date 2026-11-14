@@ -554,28 +554,12 @@ class _PhoneNodeState extends State<PhoneNode> with TickerProviderStateMixin {
             alignment: Alignment.center,
             children: [
               Positioned.fill(child: CustomPaint(painter: _RipplePainter(_ripple))),
-              Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.analyzedGreenLight,
-                      AppColors.analyzedGreen,
-                      AppColors.analyzedGreenDeep,
-                    ],
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Image.asset(
-                    'assets/json/social.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
+              Image.asset(
+                'assets/icons/connect_profile.png',
+                width: 48,
+                height: 48,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
               Positioned(
                 top: 6,
@@ -866,8 +850,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tint = item.tint;
-    final iconBox = compact ? 44.0 : 50.0;
-    final iconSize = compact ? 24.0 : 26.0;
+    final iconBox = compact ? 52.0 : 58.0;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
       padding: EdgeInsets.symmetric(
@@ -884,29 +867,12 @@ class _InfoRow extends StatelessWidget {
             scale: state == 1 ? 1.06 : 1.0,
             duration: const Duration(milliseconds: 500),
             curve: Curves.elasticOut,
-            child: Container(
+            child: Image.asset(
+              item.asset,
               width: iconBox,
               height: iconBox,
-              decoration: BoxDecoration(
-                color: _a(tint, 0.14),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _a(tint, 0.22), width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: _a(tint, 0.22),
-                    blurRadius: 14,
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Image.asset(
-                item.asset,
-                width: iconSize,
-                height: iconSize,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
             ),
           ),
           SizedBox(width: compact ? 12 : 14),

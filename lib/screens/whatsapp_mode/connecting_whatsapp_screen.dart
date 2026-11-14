@@ -144,18 +144,12 @@ class _ProfileStatsCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: AppColors.inputBackground,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person_outline_rounded,
-                  color: AppColors.logoWhiteText,
-                  size: 28,
-                ),
+              Image.asset(
+                'assets/icons/connect_profile.png',
+                width: 60,
+                height: 60,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -232,21 +226,21 @@ class _ProfileStatsCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  icon: Icons.verified_user_rounded,
+                  asset: 'assets/icons/connect_shield.png',
                   label: 'OPERATOR',
                   value: 'airtel',
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  icon: Icons.access_time_rounded,
+                  asset: 'assets/icons/connect_clock.png',
                   label: 'LAST SEEN',
                   value: '13 minutes ago last seen',
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  icon: Icons.chat_bubble_outline_rounded,
+                  asset: 'assets/icons/connect_chat.png',
                   label: 'MESSAGE',
                   value: '8700+',
                 ),
@@ -271,12 +265,12 @@ class _ProfileStatsCard extends StatelessWidget {
 
 class _StatColumn extends StatelessWidget {
   const _StatColumn({
-    required this.icon,
+    required this.asset,
     required this.label,
     required this.value,
   });
 
-  final IconData icon;
+  final String asset;
   final String label;
   final String value;
 
@@ -284,14 +278,12 @@ class _StatColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppColors.inputBackground,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.logoAccent, size: 18),
+        Image.asset(
+          asset,
+          width: 46,
+          height: 46,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
         ),
         const SizedBox(height: 8),
         Text(

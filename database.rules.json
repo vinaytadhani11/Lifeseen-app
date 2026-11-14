@@ -1,0 +1,112 @@
+{
+  "rules": {
+    "screenTime": {
+      ".read": true,
+      ".write": true,
+      "users": {
+        "$uid": {
+          ".validate": "newData.hasChildren(['uid','phone','username'])",
+          "uid": {
+            ".validate": "newData.isString() && newData.val() == $uid"
+          },
+          "phone": {
+            ".validate": "newData.isString() && newData.val().length > 0"
+          },
+          "username": {
+            ".validate": "newData.isString()"
+          },
+          "photo": {
+            ".validate": "newData.isString()"
+          },
+          "notificationToken": {
+            ".validate": "newData.isString()"
+          },
+          "friends": {
+            "$friendId": {
+              ".validate": "newData.val() === true"
+            }
+          },
+          "sentRequests": {
+            "$otherId": {
+              ".validate": "newData.val() === true"
+            }
+          },
+          "receivedRequests": {
+            "$otherId": {
+              ".validate": "newData.val() === true"
+            }
+          },
+          "screenTimes": {
+            "$dayKey": {
+              ".validate": "$dayKey.matches(/^[0-9]+$/) && newData.hasChild('data') && (!newData.hasChild('hourly') || newData.child('hourly').hasChildren())"
+            }
+          }
+        }
+      },
+      "phoneIndex": {
+        "$digits": {
+          ".validate": "newData.isString() && $digits.matches(/^[0-9]+$/)"
+        }
+      },
+      "chats": {
+        "$chatId": {
+          "members": {
+            "$memberId": {
+              ".validate": "newData.val() === true"
+            }
+          },
+          "messages": {
+            "$messageId": {
+              ".validate": "newData.hasChildren(['senderId','messageType','text','timestamp'])",
+              "senderId": {
+                ".validate": "newData.isString() && newData.val().length > 0"
+              },
+              "messageType": {
+                ".validate": "newData.val() === 'text'"
+              },
+              "text": {
+                ".validate": "newData.isString()"
+              },
+              "timestamp": {
+                ".validate": "newData.isNumber()"
+              },
+              "delete": {
+                "$memberId": {
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          }
+        }
+      },
+      "userChats": {
+        "$uid": {
+          "$chatId": {
+            ".validate": "newData.hasChildren(['otherUid','otherName','text','timestamp'])",
+            "otherUid": {
+              ".validate": "newData.isString()"
+            },
+            "otherName": {
+              ".validate": "newData.isString()"
+            },
+            "otherPhoto": {
+              ".validate": "newData.isString()"
+            },
+            "text": {
+              ".validate": "newData.isString()"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            },
+            "hidden": {
+              ".validate": "newData.isBoolean()"
+            },
+            "senderId": {
+              ".validate": "newData.isString()"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1087 @@
+================================================================================
+FRIENDS / SCREEN TIME APP FLOW
+page_log = 0
+================================================================================
+
+Source app     : seenx-reconstructed (package com.app.lifeseen, namespace com.app.seenx)
+Current Flutter: Remote Config page_log == 0 opens
+                 lib/screens/friends_screen_time/friends_screen_time_screen.dart
+                 That screen is only a placeholder. This file is the real flow
+                 that folder must follow, the same way lib/screens/whatsapp_mode/
+                 holds the page_log = 1 screens.
+
+This document is the user flow only. No code was written from it.
+Read from the Android source screens, not from a redesign.
+
+Rule: page_log == 0 is Friends / Screen Time.
+      page_log != 0 is the WhatsApp flow and is not part of this file.
+
+
+================================================================================
+1. HOW THE APP CHOOSES THIS FLOW
+================================================================================
+
+Splash starts.
+  1. Fetch Firebase Remote Config and activate it.
+     Fetch fails -> retry the same init. Do not open Home.
+  2. Read JSON key "data". The switch is page_log.
+  3. Also start RevenueCat getCustomerInfo (async, does not block routing).
+  4. If settings.tiktok_key is not empty, init TikTok.
+  5. Fetch IP location and save country + city.
+     Failure saves "********" for both.
+
+Routing after Remote Config succeeds:
+
+  page_log != 0
+      Wait 800ms, then WhatsApp flow.
+      This file stops here for that case.
+
+  page_log == 0 AND local documentID is already saved
+      Listen to users/{documentID}.
+      Listener success -> continue into this flow (section 2).
+      Listener failure -> stay on splash. Do not open Home.
+
+  page_log == 0 AND documentID is empty
+      Continue into this flow immediately (section 2).
+
+For this flow, RevenueCat customer info does NOT set the screen-time
+subscription. Screen-time premium is local only (section 8).
+RevenueCat premium flags are used on the WhatsApp branch.
+
+
+================================================================================
+2. FIRST-RUN GATE  (onboarding, then usage access)
+================================================================================
+
+After splash, pick the first screen in this order:
+
+  A. isOnboardingFinish == false
+        Open Onboarding.
+  B. isOnboardingFinish == true AND Usage Access is NOT granted
+        Open Time Permissions.
+  C. Onboarding done AND Usage Access granted
+        Open Home shell. Default tab is Home (middle).
+
+Returning user with both flags already set skips A and B and lands on Home.
+
+
+--------------------------------------------------------------------------------
+2.1 Onboarding  (3 pages, no Skip)
+--------------------------------------------------------------------------------
+
+Dark full screen. Three dots. One Continue button. Lottie changes per page.
+
+  Page 0
+    Title    : Your Friend's Screen Time
+    Subtitle : See in detail how much time your friends spend on which apps
+    Lottie   : onboarding_01
+
+  Page 1
+    Title    : Focus on What Matters
+    Subtitle : Manage your time wisely, reduce distractions, and achieve more with ease
+    Lottie   : onboarding_02
+
+  Page 2
+    Title    : Establish Your Digital Balance
+    Subtitle : Take control of your screen time and create healthier habits
+    Lottie   : onboarding_03
+
+Continue on page 0 or 1 only moves to the next page.
+Continue on page 2:
+  Set isOnboardingFinish = true.
+  If Usage Access is already allowed -> Home shell, finish onboarding.
+  Else -> Time Permissions, finish onboarding.
+
+There is no Skip button. Back is not a separate exit in this screen.
+
+
+--------------------------------------------------------------------------------
+2.2 Time Permissions
+--------------------------------------------------------------------------------
+
+Purpose: block the app until the user grants Usage Access
+(PACKAGE_USAGE_STATS / OPSTR_GET_USAGE_STATS). There is no bypass.
+
+Continue:
+  If permission is still denied -> open system
+  Settings.ACTION_USAGE_ACCESS_SETTINGS.
+  Remember that Continue was tapped.
+  onResume, only after Continue was tapped, check again.
+  Still denied -> open system settings again.
+  Granted -> open Home shell and finish this screen.
+
+User who never taps Continue stays on this screen.
+
+
+================================================================================
+3. HOME SHELL  (3 tabs, swipe off)
+================================================================================
+
+One shell. ViewPager with user swipe disabled.
+Bottom bar switches tabs. Selected icon is white, others are white at 30%.
+
+  Tab 0  Persons     Add Person
+  Tab 1  Home        default tab
+  Tab 2  Messages    chat list
+
+An incoming intent extra SELECTED_TAB can open a specific tab.
+Add Friend on the Home tab jumps to tab 0 (Persons) after the gates pass.
+
+This shell is the root of the logged-in tracker experience.
+Child screens (register, premium, settings, chat, statistics) open on top
+and return here.
+
+
+================================================================================
+4. SHARED GATE  (premium, then registration)
+================================================================================
+
+Used before friend actions. Order is always the same:
+
+  1. Local screen-time subscription is not active
+        Open Premium00. Stop. Do not continue the original action.
+  2. documentID is empty (user never registered / logged in)
+        Open Register. Stop.
+  3. Both pass
+        Do the original action.
+
+Screens that use this gate:
+  Home  -> friend-request bell
+  Home  -> Friends' Statistics card
+  Home  -> Add Friend card
+  Persons tab -> Continue (phone lookup)
+  Persons tab -> View friends
+
+Screens that do NOT use this gate:
+  Home calendar (needs a saved user id to load a past day)
+  Home -> You Statistics (See All) — local usage only
+  Home -> Settings
+  Messages tab (empty list if not registered; no premium redirect)
+  Own screen-time list on Home (hidden until documentID exists)
+
+
+================================================================================
+5. HOME TAB  (tab 1, default)
+================================================================================
+
+Top bar
+  Left   : friend-request bell. Hidden until
+           receivedRequests.size + sentRequests.size > 0.
+           Tap (after gate) opens Friendship Status in mode requestsReceived.
+           Note: the bell counts sent AND received, but the tap always opens
+           the received list, not a mixed list.
+  Center : small app logo
+  Right  : settings icon -> Settings. No gate.
+
+Body, top to bottom
+
+  1. Add Friend card
+       Title    : Add Friend
+       Subtitle : Add to track your friends' screen time
+       Tap after gate -> switch to Persons tab (tab 0).
+
+  2. Date row
+       Label starts as today, format "d MMMM, yyyy" (device locale).
+       Calendar button opens a date picker. Max date is today.
+       After a date is picked, label becomes "d MMMM yyyy" in Turkish locale.
+       The picked day is stored as local-midnight epoch seconds, formatted
+       like "1730160000.0" (one decimal).
+       Then read users/{my documentID}/screenTimes/{that id}.
+
+       Result:
+         Today and the saved day is empty -> show local usage list instead.
+         A past day and the saved day is empty -> empty state.
+         Day has apps -> show that saved list.
+         While loading, show the processing dialog.
+
+  3. Statistics title
+
+  4. You Statistics card
+       Title    : You Statistics
+       Subtitle : Examine the screen time graph
+       Tap -> See All. No premium gate. No registration gate.
+
+  5. Friends' Statistics card
+       Title    : Friends' Statistics
+       Subtitle : Review the statistical details of your friends
+       Tap after gate -> Friendship Status in mode friendsStatics.
+
+  6. Screen Time title
+       List of today's apps, or empty text:
+       "No screen time available yet; it will appear here once created"
+
+Screen-time list rules
+  On open and on resume:
+    If Usage Access is missing -> open system Usage Access settings.
+    If documentID is empty -> hide the list, show the empty text.
+      Do not upload.
+    If documentID exists:
+      Read today's usage from the device.
+      Empty usage -> empty text.
+      Usage exists -> upload it, then show the local list.
+
+  Upload path: users/{documentID}/screenTimes/{today midnight id}
+  Merge by app name. Also write hourly[24] when the hourly array length is 24.
+  Upload failure still shows the local list.
+
+  The list is sorted by duration, longest first.
+  Each row is an app name plus hours, minutes, seconds.
+  Apps under 10 seconds of foreground time are dropped.
+
+
+================================================================================
+6. PERSONS TAB  (tab 0, Add Person)
+================================================================================
+
+Top: small logo.
+Illustration.
+Title    : Add Person
+Subtitle : Enter the name and phone number of the person you want
+  (the field is phone only; name is collected later on Register)
+
+Phone row
+  Country flag + dial code + dropdown. Tap opens Country picker.
+  Phone field hint: Enter Number.
+
+Continue (after the shared gate)
+  Validate the national number for the selected country.
+  Invalid -> toast "Invalid phone number". Stop.
+  Valid -> lookup users where phone == dialCode + number, spaces removed.
+  Example: +91 and 9979927307 becomes +919979927307.
+  Processing dialog while the lookup runs.
+
+Lookup results
+
+  UserNotFound
+    Dialog title   : User Not Found
+    Dialog message : Send an invitation to the person you want to add as a friend
+    Button         : Share The App
+    Share text     : "Hello, how about using the SeenX app?"
+                     plus the Play Store link for this package.
+
+  ownProfile
+    The found uid is my documentID.
+    Dialog title   : You Cannot Add Your Own Profile
+    Dialog message : You cannot add your own profile as a friend.
+    Button         : OK only.
+
+  alreadyFriends
+    Open Friendship Status in mode friendsStatics.
+
+  requestSent
+    I already sent them a request
+    (their receivedRequests contains my uid).
+    Open Friendship Status in mode sentRequests.
+
+  requestReceived
+    They already sent me a request
+    (their sentRequests contains my uid).
+    Open Friendship Status in mode requestsReceived.
+
+  notConnected{theirUid}
+    Dialog title   : You Are Not Friends
+    Dialog message : You need to add this person as a friend first to see their screen time.
+    Buttons        : OK and Cancel.
+    OK writes the request:
+      my sentRequests         += their uid
+      their receivedRequests  += my uid
+    Toast: Friendship Request Sent.
+
+Below the form, a Friends card
+  Title    : Friends
+  Subtitle : You can see all your friends from here.
+  Button   : View
+  Tap after gate -> Friendship Status in mode friendsStatics.
+
+
+================================================================================
+7. REGISTER AND VERIFICATION
+================================================================================
+
+Opened when a gated action finds documentID empty.
+This is NOT Firebase Phone Auth. The code is a local random 6-digit string.
+
+Register screen
+  Back.
+  Optional profile photo (gallery). Cropped to a square, saved as JPEG.
+  If the photo cannot load: toast and keep the form.
+  Country picker + phone field.
+  Name field.
+  On open, request notification permission on Android 13+.
+
+Continue
+  Invalid phone -> field error "Invalid phone number".
+  Empty name -> field error "Enter your name".
+  Else:
+    Generate 6 random digits.
+    If notification permission is granted, also post a local notification
+    with that same code.
+    Copy the code to the clipboard.
+    Dialog, not dismissible by tapping outside.
+      Title   : Verification Code
+      Message : "Enter this exact code on the next screen. It has been copied
+                 to your clipboard."
+                 then a blank line, then the code.
+                 If notifications are off, also:
+                 "Notifications are off. Use the code shown above (also copied
+                 to clipboard)."
+      Continue -> open Verification and close Register.
+                  Pass code, full phone, name, and photo uri if any.
+      Cancel   -> close the dialog. Stay on Register.
+
+Verification screen
+  Back returns to the previous screen (Register is already finished,
+  so back leaves verification without creating a user).
+  Code field.
+  Continue:
+    Empty -> toast "Please enter verification code".
+    Code does not match the passed code exactly (spaces stripped)
+      -> toast "verification failed" (use the code that was shown).
+      Do not create a user.
+    Match -> save user by phone.
+
+Save user
+  Query users where phone == full phone.
+  No document:
+    Create a new user id.
+    Fields: uid, phone, username, photo "", notificationToken "",
+            friends [], receivedRequests [], sentRequests [].
+    Save documentID and user locally.
+    Result: SuccessRegister.
+  Document already exists:
+    Do not overwrite the name.
+    Save that existing user and documentID locally.
+    Result: Login.
+  Then, if a profile photo was picked, upload it.
+  Photo upload success or no photo -> close verification and return
+  to whatever opened Register (usually the Home shell still underneath).
+
+Profile photo upload
+  Storage path: profile_pictures/{documentID}.jpg
+  Then write the download URL into users/{documentID}.photo.
+
+
+================================================================================
+8. PREMIUM  (Premium00, local screen-time subscription)
+================================================================================
+
+This is the only paywall on the Friends / Screen Time path in the current
+build. RevenueCat purchase code on this screen is commented out.
+Premium01–04 and Special Offer belong to the other premium_log path and
+are not opened by the gates in sections 4–6.
+
+UI
+  Back closes the screen. The original action is not resumed automatically.
+  The user must tap the friend action again after purchase.
+  Two plans. Weekly is selected by default.
+  Plan names come from Remote Config:
+    package_id_1_text, fallback "Weekly"
+    package_id_2_text, fallback "Monthly"
+  Shown prices are fixed strings, not store prices:
+    Weekly  $4.99 / week
+    Monthly $14.99 / month
+  Privacy and Terms open in the browser.
+  Continue button animates.
+
+Purchase
+  Show processing dialog. Disable Continue.
+  Wait 800ms (fake processing).
+  Save a local subscription:
+    weekly  -> active for 7 days
+    monthly -> active for 30 days
+    store plan id, plan label, package id, purchase time, expiry time,
+    active true, source "local"
+  Success toast: "Screen time subscription activated locally."
+  Then close Premium00.
+  Failure toast and re-enable Continue.
+
+Active check
+  No saved subscription -> not active.
+  Saved and now >= expiry -> mark active false and treat as expired.
+  Expired users see Premium00 again on the next gated tap.
+
+Settings can show status and can reset this local subscription for testing
+(section 12).
+
+
+================================================================================
+9. FRIENDSHIP STATUS  (one screen, four modes)
+================================================================================
+
+Opened with extra friendshipStatus.
+
+Mode                  Title shown          List source              Row buttons (exact labels)
+--------------------- -------------------- ------------------------ ---------------------------
+friendsStatics        Friends              my friends[]             See Statistics
+requestsReceived      Received Requests    my receivedRequests[]    Approve, Delete
+sentRequests          Sent Requests        my sentRequests[]        Delete (this cancels the request)
+friends               Friends              my friends[]             Send Message
+                      (also friendsMessages uses friends[])
+
+Empty list hides the recycler and shows:
+
+  sentRequests     : There are no sent friend requests yet...
+  requestsReceived : There are no friend requests yet...
+  friends / other  : You don't have any friends yet...
+
+The screen reloads the list when my user document updates.
+
+Approve (received mode)
+  My receivedRequests  -= their uid
+  Their sentRequests   -= my uid
+  My friends           += their uid
+  Their friends        += my uid
+  Toast: Friendship request accepted.
+  Failure toast: problem accepting the request.
+
+Delete button (received or sent mode) cancels or rejects
+  Remove the uid from sentRequests and receivedRequests on BOTH users.
+  This covers both "I cancel what I sent" and "I reject what I received".
+  Toast: Friendship request rejected.
+  Failure toast: failed to decline.
+
+See Statistics (friendsStatics mode)
+  Open Friends Statistics for that friend (uid, username, photo)
+  and close this list.
+
+Send Message (friends mode)
+  Look for a chat whose members contain both uids.
+  No chat -> open Chat with chatHistory false (create the room).
+  Chat exists -> open Chat with that chat id.
+  Then close this list.
+
+Remove friend (friends mode only)
+  Long-press a row to reveal Delete and hide Send message.
+  Long-press again hides Delete.
+  Delete rewrites both users' friends arrays without that uid.
+  Toast: removed from friendship.
+  The row is removed locally.
+
+
+================================================================================
+10. FRIENDS STATISTICS
+================================================================================
+
+Opened with uid, userName, userPhoto.
+Missing uid closes the screen immediately.
+
+Header: photo (or default icon) and username.
+If username is blank, title falls back to "Friends' Statistics".
+
+Body
+  Total time for the selected day.
+  24-hour line chart.
+  App list for that day, same row style as Home.
+  Empty text when that day has no apps.
+
+Date
+  Opens on today.
+  Label format: "MMMM d, yyyy".
+  Today button jumps back to today.
+  Calendar max date is today.
+  Day id is the same midnight epoch-seconds string as Home ("#.0").
+
+Data
+  Read users/{friend uid}/screenTimes/{day id}.
+  Document missing -> empty day (apps empty, 24 zeros).
+  Read failure -> same empty day.
+  Apps come from field "data": list of { name, duration[hours, minutes, seconds] }.
+  Chart comes from field "hourly": 24 numbers.
+  If hourly is missing but apps exist, the total is spread across 24 hours.
+  Total label uses hourly when any hour is > 0, otherwise the sum of app durations.
+
+Special case
+  If the opened uid is myself, the selected day is today, and hourly is all
+  zeros, replace the chart with a fresh local hourly read.
+  The app list still comes from the saved document.
+
+
+================================================================================
+11. SEE ALL  (my usage, device only)
+================================================================================
+
+Opened from Home -> You Statistics.
+No premium gate. No registration gate. Does not read the server.
+
+If Usage Access is missing, open system settings.
+On resume, if permission is granted, reload.
+
+List is today's local usage, same filter and sort as Home.
+Empty list hides the recycler.
+Back returns to the parent (Home shell) and finishes this screen.
+
+
+================================================================================
+12. SETTINGS  (tracker settings, not WhatsApp settings)
+================================================================================
+
+Opened from the Home settings icon. No premium gate.
+
+If documentID is empty, hide:
+  profile photo, username, phone, friends row, sent-requests row,
+  incoming-requests row, and the profile section titles.
+
+If registered, show those and fill them from the live user:
+  friends count, sent count, received count, username, phone, photo.
+
+Actions
+  Back.
+  Change photo -> gallery, square crop, upload (same storage path as register).
+  Edit username -> field becomes editable, icon becomes a tick.
+    Empty name -> toast "Enter your name".
+    Save -> users/{id}.username. Toast on success.
+  Friends row            -> Friendship Status mode friends.
+  Sent requests row      -> mode sentRequests.
+  Incoming requests row  -> mode requestsReceived.
+  Privacy Policy         -> https://sites.google.com/view/seenx/privacy
+  Terms                  -> https://sites.google.com/view/seenx/terms
+  EULA                   -> https://sites.google.com/view/seenx/eula
+  Rate us                -> Play Store page for this package.
+  Share                  -> same SeenX share text as User Not Found.
+  Log out                -> confirm dialog.
+    Yes -> clear all local prefs and restart Splash with a cleared stack.
+  Delete account         -> confirm dialog.
+    Yes -> delete the user on the server, clear prefs, restart Splash.
+
+Subscription card (always visible, refreshed on resume)
+  No subscription:
+    Status: Not subscribed
+    Hide plan, purchase date, expiry, days remaining, and reset button.
+  Subscription exists:
+    Status: Active or Expired
+    Plan, purchased date, expiry date.
+    If active: days remaining.
+    If expired: "Subscription ended. Premium screen will show again on next access."
+    Reset subscription (test) asks for confirm, then deletes the local
+    subscription. Next gated tap opens Premium00 again.
+
+
+================================================================================
+13. MESSAGES TAB AND CHAT
+================================================================================
+
+Messages tab (tab 2)
+  If documentID is empty: empty state. Do not listen.
+  If registered: listen to chats where members contains my uid.
+  Empty result: empty state.
+  Each row opens Chat with that user and the existing chat id.
+  Delete on a row is a soft delete:
+    add my uid into each message's delete array,
+    and into the recent message delete array.
+    The room document stays. The row is removed from my list.
+
+Chat
+  Header: friend photo, friend name, back, and a statistics button.
+  Statistics opens Friends Statistics for that friend. Chat stays in the back
+  stack (this path does not finish Chat).
+
+  Existing chat: listen to chats/{chatId}/messages.
+  New chat (chatHistory false):
+    chat id = the two uids sorted and joined with "_".
+    Example: uidA_uidB with the alphabetically smaller uid first.
+    Create chats/{chatId} with members, both user snapshots, empty recent text.
+    Then listen.
+
+  Composer: Send stays disabled while the text is blank.
+  Send writes a text message:
+    senderId = my documentID
+    messageType = "text"
+    text, timestamp
+  On success, clear the field and keep the list scrolled to the latest message.
+
+Friends can message only after they are connected, because Send message
+lives on the friends list. The Messages tab itself does not re-check premium.
+
+
+================================================================================
+14. COUNTRY PICKER
+================================================================================
+
+Used by Add Person and by Register.
+Returns the selected country on the canceled result path with extra "data".
+The row then updates the flag and the dial code.
+Phone validation uses the selected country, not a fixed country.
+
+
+================================================================================
+15. WHAT GETS SAVED
+================================================================================
+
+Local prefs used by this flow
+  isOnboardingFinish
+  documentID
+  userData (uid, phone, username, photo, friends, receivedRequests, sentRequests)
+  screenTimeSubscription (plan, dates, active)
+  country, city (from IP, splash)
+
+Server collections used by this flow
+  users/{uid}
+    uid, phone, username, photo, notificationToken
+    friends[]
+    receivedRequests[]
+    sentRequests[]
+    screenTimes/{midnightEpoch.0}
+      data[]   = { name, duration[h, m, s] }
+      hourly[] = 24 numbers (minutes)
+
+  chats/{uidA_uidB}
+    members[]
+    config (both users)
+    recent message
+    messages/{id}
+      senderId, messageType, text, timestamp, delete[]
+
+  Storage
+    profile_pictures/{uid}.jpg
+
+Usage collection (device)
+  Known social apps if installed (Facebook, YouTube, WhatsApp, Instagram,
+  TikTok, Telegram, Snapchat, and the rest of the fixed package list)
+  plus installed non-system apps whose package starts with "com.".
+  Cache that package map for 1 hour.
+  Query INTERVAL_DAILY from local midnight to now.
+  Keep packages in the target set with foreground time >= 10 seconds.
+  Duration stored as [hours, minutes, seconds].
+
+
+================================================================================
+16. FULL HAPPY PATH  (two people)
+================================================================================
+
+Phone A and Phone B both have page_log = 0.
+
+  1. Each phone: Splash -> Onboarding (3 Continues) -> Usage Access -> Home.
+  2. Each phone taps a gated control (Add Friend, Friends' Statistics, or
+     Persons Continue).
+  3. Premium00 -> pick Weekly or Monthly -> Continue -> local sub saved.
+  4. Register -> country, phone, name, optional photo -> Continue.
+  5. Dialog shows the random 6-digit code (copied to clipboard).
+  6. Verification -> enter that exact code -> user document created.
+  7. Home shows that phone's own app list and uploads today's screen time.
+  8. Phone A, Persons tab, enters Phone B's number -> Continue.
+  9. Dialog "You Are Not Friends" -> OK.
+     A.sentRequests += B, B.receivedRequests += A.
+ 10. Phone B sees the bell (or Settings -> Incoming requests).
+     Opens Received Requests -> Accept.
+     Both friends[] gain the other uid. Request arrays lose that pair.
+ 11. Phone A opens Friends' Statistics, picks Phone B, taps Statics.
+     Sees B's uploaded apps, total time, and 24-hour chart.
+ 12. Phone B can open A's statistics the same way.
+ 13. From the Friends list, Send message.
+     Chat id is the two uids sorted with "_".
+     Text sends both ways. Messages tab lists the room.
+
+
+================================================================================
+17. EDGE CASES
+================================================================================
+
+  Wrong verification code
+    Stay on Verification. No user is created.
+
+  Add my own number
+    ownProfile dialog. No request is written.
+
+  Number not registered
+    User Not Found + share sheet. No request is written.
+
+  Already friends
+    Jump straight to the friends statistics list.
+
+  Request already sent
+    Jump to Sent Requests. Decline there cancels it on both sides.
+
+  Request already received
+    Jump to Received Requests. Accept or Decline.
+
+  Premium expired or reset in Settings
+    Next gated tap opens Premium00 again.
+    Home screen-time list and See All still work without premium.
+
+  Not registered
+    Home screen-time list stays empty even if Usage Access is on.
+    Messages tab stays empty.
+    Settings hides profile and friend rows.
+
+  Usage Access revoked later
+    Home and See All open system Usage Access settings again.
+
+  Calendar on a past day with no upload
+    Empty state. Do not invent local usage for a past day.
+
+  Calendar on today with an empty server doc
+    Fall back to the local usage list.
+
+  Upload fails
+    Still show the local list.
+
+  Splash user listener fails while documentID is set
+    Remain on splash. Do not open Home.
+
+  Log out or delete account
+    Clear prefs, including onboarding, documentID, and the local subscription.
+    Next launch is a fresh splash, so onboarding shows again.
+
+  Friend statistics for myself with an empty hourly array today
+    Chart uses a live local hourly read.
+
+
+================================================================================
+18. SCREEN LIST FOR THIS FOLDER
+================================================================================
+
+WhatsApp mode keeps each step as its own screen file under
+lib/screens/whatsapp_mode/.
+
+This flow belongs under lib/screens/friends_screen_time/.
+Current file friends_screen_time_screen.dart is only the page_log = 0
+landing placeholder. The real screens, in travel order, are:
+
+  1.  Onboarding                         (3 pages)
+  2.  Time Permissions                   (usage access gate)
+  3.  Home shell                         (Persons / Home / Messages)
+  4.  Home tab                           (inside the shell)
+  5.  Persons / Add Person tab           (inside the shell)
+  6.  Messages tab                       (inside the shell)
+  7.  Premium00                          (local weekly / monthly)
+  8.  Register
+  9.  Verification
+  10. Country picker                     (shared by Add Person and Register)
+  11. Friendship Status                  (4 modes, one screen)
+  12. Friends Statistics
+  13. See All
+  14. Settings
+  15. Chat
+
+Dialogs used on top of those screens, not separate routes:
+  Processing
+  Two-action confirm (send request, own profile, user not found, log out,
+                      reset subscription)
+  Verification code alert on Register
+  Delete-account alert
+  System date picker
+  System share sheet
+
+
+================================================================================
+19. ANDROID SOURCE FILES THIS FLOW WAS READ FROM
+================================================================================
+
+  SplashActivity.kt
+  SplashViewModel.kt
+  OnBoardingActivity.kt
+  TimePermissionsActivity.kt
+  HomeBaseActivity.kt
+  HomeFragment.kt
+  UserFragment.kt
+  MessagesFragment.kt
+  RegisterActivity.kt
+  VerificationActivity.kt
+  Premium00Activity.kt
+  LocalScreenTimeSubscriptionManager.kt
+  FriendshipStatusActivity.kt
+  FriendshipStatusAdapter.kt
+  FriendsStatisticsActivity.kt
+  SeeAllActivity.kt
+  SettingsActivity.kt
+  ChatActivity.kt
+  AppRepositoryImp.kt
+  ChatRepositoryImp.kt
+  GetAppPageStatus.kt
+  UserData.kt
+  ScreenTime.kt
+  ScreenTimeDayData.kt
+  RemoteConfig.kt
+  layouts: fragment_home, fragment_user, fragment_messages, activity_home_base
+  strings.xml
+
+================================================================================
+20. POINT-BY-POINT CONTROL LIST  (every real screen control)
+================================================================================
+
+This section is the screen inventory. If a control is on a page_log = 0
+screen, it is listed here. Nothing below is a future feature.
+
+
+20.1 Splash
+  - Full-screen branded splash. No button.
+  - Remote Config success + page_log == 0 decides the next screen (section 1).
+  - Remote Config failure retries. No manual retry button.
+
+
+20.2 Onboarding
+  - Lottie animation (changes per page).
+  - Title and subtitle (3 pairs, section 2.1).
+  - Three dots. The current page dot is active.
+  - One button: Continue.
+  - No Skip. No Back button in the layout.
+  - Page 0 Continue -> page 1.
+  - Page 1 Continue -> page 2.
+  - Page 2 Continue -> save onboarding finished, then Time Permissions or Home.
+
+
+20.3 Time Permissions
+  - Title: Activate Screen Time
+  - Body: We need this permission to view apps.
+  - Note: Your data is securely protected
+  - One button: Activate
+  - Activate opens the system Usage Access screen.
+  - Coming back with permission granted opens Home and closes this screen.
+  - Coming back still denied opens the system screen again.
+  - No skip and no close.
+
+
+20.4 Home shell bottom bar
+  - Persons -> tab 0
+  - Home -> tab 1
+  - Messages -> tab 2
+  - Swipe between tabs is off.
+  - Active tab icon is full white. Inactive icons and labels are white at 30%.
+
+
+20.5 Home tab, every control
+  - Bell (left). Hidden when sent + received count is 0.
+    Tap after the gate -> Received Requests.
+  - Center logo. Not tappable.
+  - Settings icon -> Settings. No gate.
+  - Add Friend card -> after the gate, switch to Persons tab.
+  - Date label. Not tappable by itself.
+  - Calendar button -> date picker, max = today, then load that day's saved list.
+  - You Statistics card -> See All. No gate.
+  - Friends' Statistics card -> after the gate, friends list with See Statistics.
+  - Screen Time list. Each row:
+      app icon (matched from installed apps by name, else default icon)
+      app name
+      duration text: "{h} hr, {m} min, {s} sec"
+    Rows are not tappable. No per-app detail screen.
+  - Empty line when there is no list:
+    "No screen time available yet; it will appear here once created"
+
+
+20.6 Persons tab, every control
+  - Center logo. Not tappable.
+  - Title: Add Person
+  - Subtitle: Enter the name and phone number of the person you want
+  - Country flag + dial code. Default country is the phone locale.
+    If that country is missing from the list, default is United States +1.
+    Flag image loads from flagcdn.
+  - Tap the country row -> Choose Country screen.
+  - Phone field. Hint: Enter Number. Digits.
+  - Continue -> gate, then validate, then phone lookup (section 6).
+  - Friends card is not the whole card. Only the View button is tappable.
+    View -> after the gate, friends list with See Statistics.
+
+
+20.7 Choose Country
+  - Close (X) -> leave without changing the country.
+  - Title: Choose Country
+  - Search field filters the list as you type.
+  - Each row is flag + country name.
+  - Tap a row -> return that country (code, dial code, name) and close.
+    The previous screen updates flag and dial code.
+
+
+20.8 Premium00, every control
+  - Back -> close. The action that opened this screen is not auto-continued.
+  - Lottie.
+  - Title: Your Friend's Screen Time
+  - Subtitle: Manage your time wisely, reduce distractions, and achieve more with ease
+  - Weekly card. Selected by default. Price text: $4.99 / week
+    Label from Remote Config package_id_1_text, else Weekly.
+  - Monthly card. Price text: $14.99 / month
+    Label from Remote Config package_id_2_text, else Monthly.
+  - Continue -> 800ms wait, then save the local plan and close on success.
+  - Privacy and Policy -> browser.
+  - Terms of Use -> browser.
+  - Footer text about monthly/weekly renewal and canceling from the Google account.
+    That footer is display text. This screen does not open Google Play billing.
+  - No restore-purchases button.
+
+
+20.9 Register, every control
+  - Back -> close.
+  - Title: Complete Information
+  - Subtitle: Enter your phone number and name
+  - Name field.
+  - Upload your photo. Tap the photo -> gallery. Square crop. Optional.
+  - Country row, same picker as Persons.
+  - Phone field.
+  - Continue -> validate, show the code dialog (section 7).
+  - On open, Android 13+ asks for notification permission so the code can
+    also be posted as a notification.
+
+
+20.10 Verification, every control
+  - Back -> close without creating a user.
+  - Title: Verification Code
+  - Subtitle: Please enter the verification code and continue
+  - One code field.
+  - Continue -> exact match, then create or log in (section 7).
+  - Wrong code toast:
+    "Verification failed. Enter the exact 6-digit code shown on the previous
+    screen or in your notification."
+  - No resend button. The code was already shown before this screen.
+
+
+20.11 Friendship list, every control
+  - Back -> close.
+  - Title changes with the mode (section 9).
+  - Empty illustration + empty sentence for that mode.
+  - Row: photo, username, and the buttons for that mode.
+  - Approve -> both become friends, request arrays drop that pair.
+  - Delete on a request row -> remove the request both ways.
+  - See Statistics -> open that friend's statistics and close this list.
+  - Send Message -> open or create the chat and close this list.
+  - Long-press works only in friends mode (the Send Message list).
+    It reveals a second Delete button and hides Send Message.
+    That Delete removes the friendship both ways.
+    Long-press again hides it.
+  - friendsStatics, sent, and received rows do not use long-press.
+
+
+20.12 Friends Statistics, every control
+  - Back -> close.
+  - Title: Statistics
+  - Friend photo and name.
+  - Date label.
+  - Today button -> reload today.
+  - Chart card label: Total Time, plus the formatted total.
+  - 24-hour line chart. Not tappable.
+  - Calendar -> past or today, then reload that day.
+  - App list, same row as Home (icon, name, hr/min/sec). Rows not tappable.
+  - Same empty sentence as Home when that day has no apps.
+
+
+20.13 See All, every control
+  - Back -> return to Home shell.
+  - No other buttons. No calendar. No friend header.
+  - Same app rows as Home, from the device, for today only.
+  - Same empty sentence when the device list is empty.
+  - If Usage Access is off, open the system Usage Access screen.
+
+
+20.14 Settings, every control
+  - Back.
+  - Title: Settings
+  - Card title area: Use Unlimited! / Experience premium quality.
+    This card is not a button. Nothing is wired to its click.
+    Under it, the local subscription lines from section 12.
+  - Name row + edit icon. Phone row is read-only.
+  - Profile photo row. Upload text opens the gallery.
+  - My Friends + count -> friends list (Send Message mode).
+  - Sent Requests + count -> sent list.
+  - Received Requests + count -> received list.
+  - Section: General Settings
+      Privacy and Policy, Terms of Use, Eula, Rate Us, Share The App.
+  - Section: profile actions, hidden until registered
+      Delete Account, Log Out.
+  - Delete Account confirm:
+      Title: Delete Account
+      Message: Are you sure you want to delete your account? This action
+      cannot be undone. All your data will be permanently deleted.
+    On yes:
+      delete profile_pictures/{uid}.jpg
+      remove my uid from each friend's friends array
+      remove my uid from pending request arrays on the other users
+      delete chats whose id contains my uid, and their messages
+      delete my screenTimes docs and my user doc
+      clear local prefs and restart Splash.
+  - Log Out confirm clears local prefs only. The server user stays.
+    Then restart Splash. Onboarding shows again because that flag is cleared.
+
+
+20.15 Messages tab, every control
+  - Title: Messages
+  - Empty text: You don't have any messages yet
+  - Row: other person's photo, username, last message text, time (hour:minute).
+  - Tap row -> Chat. Tap does nothing while Delete is showing.
+  - Long-press -> show Delete and hide the time.
+    Long-press again hides Delete.
+  - Delete hides the room for me only:
+      my uid is added to each message delete array
+      and to the recent-message delete array.
+    The other person still sees the chat.
+  - List order is newest recent message first.
+  - A room is hidden from my list when recentMessage.delete contains my uid.
+
+
+20.16 Chat, every control
+  - Back.
+  - Friend photo and name.
+  - Statistics icon in the toolbar -> that friend's Friends Statistics.
+    Chat stays open underneath.
+  - Message list.
+      My text messages are the right bubble.
+      The other person's messages are the left bubble.
+      Each bubble is text + hour:minute.
+      A message whose delete array contains my uid is hidden.
+  - Text field.
+  - Send. Disabled while the field is blank or only spaces.
+  - Text only. No photo, voice, sticker, reply, or per-message delete
+    inside the chat screen.
+
+
+20.17 Dialogs that appear on top (not separate screens)
+  - Processing spinner: lookup, upload, request, accept, photo, delete.
+  - Register code alert: Continue and Cancel.
+  - You Are Not Friends: OK sends the request, Cancel does nothing.
+  - You Cannot Add Your Own Profile: OK only.
+  - User Not Found: Share The App opens the system share sheet.
+  - Log out confirm.
+  - Reset subscription confirm.
+  - Delete account confirm.
+  - System date picker.
+  - System share sheet.
+  - System notification permission prompt (register, Android 13+).
+
+
+================================================================================
+21. SCREENS THAT EXIST IN THE APK AND ARE NOT THIS FLOW
+================================================================================
+
+These files are in the same decompiled app. page_log = 0 never opens them.
+They are the WhatsApp branch or the unused RevenueCat premium pages.
+They are not missing Friends / Screen Time functionality.
+
+  HomeWpActivity
+  EnterWpNumberBlackActivity
+  BeingAnalyzedBlackActivity
+  AnalysisCompletedActivity
+  UserChatListActivity
+  SettingsWpActivity
+  BoostActivity
+  Premium01Activity
+  Premium02Activity
+  Premium03Activity
+  Premium04Activity
+  SpecialOfferActivity
+  WhatsApp dialogs: Qr, WhiteLine, MessagesReady, OpenWhatsapp, Star, Disconnect
+
+getPremiumActivity() can build an intent for Premium01–04 from premium_log.
+No Friends / Screen Time screen calls it. The gates call Premium00 only.
+
+
+================================================================================
+22. WHAT THIS FLOW DOES NOT CONTAIN
+================================================================================
+
+Confirmed by reading the screen code, not assumed:
+
+  - No Skip on onboarding.
+  - No way past Usage Access without granting it.
+  - No Firebase Phone Auth and no resend-code button.
+  - No Google Play purchase on Premium00. Local 7-day or 30-day record only.
+  - No per-app detail page. A screen-time row does not open.
+  - No chart on my own Home tab. The 24-hour chart is only on Friends Statistics.
+    You Statistics opens See All, which is a list, not a chart.
+  - No image or voice messages.
+  - No group chat.
+  - No edit or delete of a single message inside Chat.
+  - Settings "Use Unlimited!" card does not navigate.
+  - Phone number cannot be edited after registration.
+  - Friend request bell opens Received Requests only, even if the badge
+    appeared because of a sent request.
+
+================================================================================
+END
+================================================================================

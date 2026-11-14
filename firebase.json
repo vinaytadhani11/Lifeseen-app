@@ -1,0 +1,30 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "whatsapp-mode",
+          "appId": "1:164843390802:android:c7938ece26e6b88f0a1c8b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "whatsapp-mode",
+          "appId": "1:164843390802:ios:b7d0a72734faff380a1c8b",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "whatsapp-mode",
+          "configurations": {
+            "android": "1:164843390802:android:c7938ece26e6b88f0a1c8b",
+            "ios": "1:164843390802:ios:b7d0a72734faff380a1c8b"
+          }
+        }
+      }
+    }
+  }
+}

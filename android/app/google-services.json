@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "164843390802",
+    "firebase_url": "https://whatsapp-mode-default-rtdb.firebaseio.com",
+    "project_id": "whatsapp-mode",
+    "storage_bucket": "whatsapp-mode.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:164843390802:android:5dd25bf91949b76a0a1c8b",
+        "android_client_info": {
+          "package_name": "com.app.lifeseen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqUynIxdZsOzKkJyu2AuVYxfVqZxAg6Yw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:164843390802:android:c7938ece26e6b88f0a1c8b",
+        "android_client_info": {
+          "package_name": "com.app.logsense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqUynIxdZsOzKkJyu2AuVYxfVqZxAg6Yw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

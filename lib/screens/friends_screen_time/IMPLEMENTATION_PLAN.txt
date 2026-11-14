@@ -1,0 +1,58 @@
+FRIENDS / SCREEN TIME — IMPLEMENTATION PLAN
+Source of truth: FRIENDS_SCREEN_TIME_APP_FLOW.txt
+Entry: friends_screen_time_screen.dart when Remote Config page_log = 0
+
+Status key
+  [ ] not started
+  [~] in progress
+  [x] done
+
+Backend for this Flutter app is Firebase Realtime Database
+(whatsapp-mode-default-rtdb), under screenTime/. The Android source used
+Firestore arrays. The same fields are stored here as maps so add/remove
+stays atomic.
+
+Logout and delete clear the friends session and onboarding only.
+WhatsApp keys stay, so page_log = 1 is not wiped.
+
+On phones that are not Android, Usage Access cannot be granted.
+The permission screen is skipped there so the rest of the flow can open.
+Android uses the usage-stats channel in UsageStatsBridge.kt.
+
+--------------------------------------------------------------------------------
+1. Entry and gates                                          [x]
+   Splash opens FriendsScreenTimeScreen when page_log = 0.
+   That screen chooses:
+     account load failed (document id set, user read failed) -> retry, no Home
+     onboarding not finished -> 3 pages, Continue only
+     usage access missing -> Activate, no skip
+     else -> Home shell, default tab Home
+2. Local screen-time subscription (separate from WhatsApp)  [x]
+   Weekly 7 days, Monthly 30 days, $4.99 / $14.99, 800ms local purchase.
+   Plan labels from Remote Config package_id_1_text / package_id_2_text.
+3. Register + local 6-digit code                            [x]
+   Dialog, clipboard, notification only if permission already granted.
+   Phone lookup creates or logs in. Not Firebase Phone Auth.
+4. Persons tab + country picker                             [x]
+   Locale country, else United States. Lookup outcomes from the flow.
+5. Friendship list (4 modes)                                [x]
+   Approve, Delete, See Statistics, Send Message, long-press remove.
+6. Home tab                                                 [x]
+   Bell, settings, add friend, calendar, you statistics, friends statistics,
+   today's list. Upload only when a user id exists.
+7. See All                                                  [x]
+   Device list only. No premium gate.
+8. Friends statistics                                       [x]
+   Total, 24-hour chart, calendar, today, app list.
+9. Messages + chat                                          [x]
+   Text only. Chat id is the two uids sorted with "_".
+   Long-press hides the room for me. Statistics icon opens the friend chart.
+10. Settings                                                [x]
+    Profile, counts, legal links, share, rate, reset sub, logout, delete.
+    Use Unlimited card is visible and not tappable.
+11. Usage Access (Android)                                  [x]
+    Method channel. Known social apps plus installed com.* non-system apps.
+    Drop foreground time under 10 seconds. Hourly events for the chart.
+12. Optional profile photo                                  [x]
+    Gallery, square crop, Storage profile_pictures/{uid}.jpg.
+    Failure still finishes registration.
